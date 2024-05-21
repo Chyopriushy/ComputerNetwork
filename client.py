@@ -3,18 +3,20 @@ import threading
 import json
 import sys
 
+
 def receive_messages(sock):
     while True:
         try:
             conn, addr = sock.accept()
             message = conn.recv(1024).decode()
-            if message.startswith("user_list"):
+            if message.startswith("\n현재 온라인"):
                 _, user_list_json = message.split(',', 1)
                 global users
                 users = json.loads(user_list_json)
-                print("Online users:")
+                print("온라인 유저:")
                 for user in users:
                     print(user)
+                print()
             else:
                 print(message)
             conn.close()
@@ -22,26 +24,26 @@ def receive_messages(sock):
             break
 
 def show_options():
-    print("\nOptions: ")
-    print("1. Message a user")
-    print("2. Create chat room")
-    print("3. Join chat room")
-    print("4. Leave chat room")
-    print("5. Exit")
-    option = input("Choose an option: ")
+    print("\n원하시는 항목을 선택하십시오: ")
+    print("1. 개인채팅")
+    print("2. 단톡방 생성")
+    print("3. 단톡방 참가")
+    print("4. 단톡방 나가기")
+    print("5. 나가기\n")
+    option = input()
     return option
 
 def main():
     global users
-    user_id = input("Enter your ID: ")
+    user_id = input("아이디 입력 하시오: ")
 
     # 소켓 생성 및 바인딩
     listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listen_socket.bind(('0.0.0.0', 0))
     listen_socket.listen(5)
     ip, port = listen_socket.getsockname()
-    print(f"Your IP: {ip}")
-    print(f"Your port: {port}")
+    print(f"IP: {ip}")
+    print(f"Port Number: {port}")
 
     # 로그인 서버에 연결
     server_ip = '127.0.0.1'
@@ -49,6 +51,7 @@ def main():
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     conn.connect((server_ip, server_port))
     conn.send(f'login,{user_id},{ip},{port}'.encode())
+    print(f"{user_id}님이 로그인 하셨습니다")
     conn.close()
 
     # 메시지 송수신 스레드 시작
@@ -84,7 +87,7 @@ def main():
             if message == "/leave":
                 in_private_chat = False
                 current_private_user = None
-                print("Left private chat")
+                print("개인 채팅에서 나갑니다")
                 continue
             else:
                 target_ip, target_port = users[current_private_user]
@@ -100,13 +103,13 @@ def main():
                 if target_user in users:
                     current_private_user = target_user
                     in_private_chat = True
-                    print(f"Started private chat with {target_user}")
+                    print(f"{target_user}님과의 개인채팅을 시작합니다")
                     continue
                 else:
-                    print(f"User {target_user} not found.")
+                    print(f"{target_user}님은 온라인 상에 없습니다.")
 
             elif option == '2':
-                room_name = input("Enter chat room name: ")
+                room_name = input("생성할 방의 제목을 입력하시오: ")
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
                 conn.send(f'create_room,{room_name}'.encode())
@@ -124,7 +127,7 @@ def main():
                 if "Joined room" in response:
                     in_chat_room = True
                     current_chat_room = room_name
-                print(response)
+                print(f"{room_name}에 입장합니다.")
                 conn.close()
                 continue
 
@@ -137,13 +140,13 @@ def main():
                     if "Left room" in response:
                         in_chat_room = False
                         current_chat_room = None
-                    print(response)
+                    print(f"{current_chat_room}을 떠납니다")
                     conn.close()
                     continue
                 elif in_private_chat:
                     in_private_chat = False
                     current_private_user = None
-                    print("Left private chat")
+                    print()
                     continue
 
             elif option == '5':
