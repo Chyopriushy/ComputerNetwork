@@ -11,7 +11,7 @@ def send_user_list():
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.connect((ip, port))
-                sock.send(f"user_list,{user_list_json}".encode())
+                sock.send(f"\n현재 온라인,{user_list_json}".encode())
         except:
             continue
 
@@ -40,9 +40,9 @@ def handle_client(client_socket, client_address):
                 room_name = command[1]
                 if room_name not in chat_rooms:
                     chat_rooms[room_name] = []
-                    response = f"Chat room {room_name} created."
+                    response = f"{room_name}이 생성되었습니다."
                 else:
-                    response = f"Chat room {room_name} already exists."
+                    response = f"{room_name}방이 이미 존재합니다."
                 client_socket.send(response.encode())
             elif command[0] == 'join_room':
                 room_name, user_id = command[1], command[2]
@@ -71,13 +71,6 @@ def handle_client(client_socket, client_address):
                             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                                 sock.connect((ip, port))
                                 sock.send(f"{user_id}@{room_name}: {msg}".encode())
-            elif command[0] == 'message_user':
-                target_user, user_id, msg = command[1], command[2], command[3]
-                if target_user in clients:
-                    ip, port = clients[target_user]
-                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                        sock.connect((ip, port))
-                        sock.send(f"{user_id}@private: {msg}".encode())
         except:
             break
     client_socket.close()
@@ -88,7 +81,7 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((server_ip, server_port))
     server_socket.listen(5)
-    print(f"Server listening on {server_ip}:{server_port}")
+    print(f"서버 가동중 {server_ip}:{server_port}")
 
     while True:
         client_socket, client_address = server_socket.accept()
