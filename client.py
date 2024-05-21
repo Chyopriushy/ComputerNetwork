@@ -71,7 +71,7 @@ def main():
                     in_chat_room = False
                     current_chat_room = None
                 print(response)
-                conn.close()git
+                conn.close()
                 continue
             else:
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
