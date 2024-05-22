@@ -37,10 +37,11 @@ def handleClient(client_socket, client_address):
                 clients[id] = (ip, int(port))
                 sendList()
             elif info[0] == '방 생성':
-                room_name = info[1]
+                room_name, id = info[1], info[2]
                 if room_name not in chat_rooms:
                     chat_rooms[room_name] = []
-                    response = f"{room_name}이 생성되었습니다."
+                    chat_rooms[room_name].append(id)
+                    response = f"Create OK {room_name}이 생성되었습니다."
                 else:
                     response = f"{room_name}방이 이미 존재합니다."
                 client_socket.send(response.encode())
