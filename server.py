@@ -5,7 +5,7 @@ import json
 clients = {}
 chat_rooms = {}
 
-def send_user_list():
+def sendList():
     user_list_json = json.dumps(clients)
     for user, (ip, port) in clients.items():
         try:
@@ -15,7 +15,7 @@ def send_user_list():
         except:
             continue
 
-def notify_room_members(room_name, message):
+def notifyNewMember(room_name, message):
     if room_name in chat_rooms:
         for user in chat_rooms[room_name]:
             if user in clients:
@@ -24,53 +24,53 @@ def notify_room_members(room_name, message):
                     sock.connect((ip, port))
                     sock.send(message.encode())
 
-def handle_client(client_socket, client_address):
+def handleClient(client_socket, client_address):
     global clients, chat_rooms
     while True:
         try:
             message = client_socket.recv(1024).decode()
             if not message:
                 break
-            command = message.split(',')
-            if command[0] == 'login':
-                user_id, ip, port = command[1], command[2], command[3]
-                clients[user_id] = (ip, int(port))
-                send_user_list()
-            elif command[0] == 'create_room':
-                room_name = command[1]
+            info = message.split(',')
+            if info[0] == '로그인':
+                id, ip, port = info[1], info[2], info[3]
+                clients[id] = (ip, int(port))
+                sendList()
+            elif info[0] == '방 생성':
+                room_name = info[1]
                 if room_name not in chat_rooms:
                     chat_rooms[room_name] = []
                     response = f"{room_name}이 생성되었습니다."
                 else:
                     response = f"{room_name}방이 이미 존재합니다."
                 client_socket.send(response.encode())
-            elif command[0] == 'join_room':
-                room_name, user_id = command[1], command[2]
+            elif info[0] == '방 참가':
+                room_name, id = info[1], info[2]
                 if room_name in chat_rooms:
-                    chat_rooms[room_name].append(user_id)
-                    response = f"Joined room {room_name}"
-                    notify_room_members(room_name, f"{user_id} has joined the room.")
+                    chat_rooms[room_name].append(id)
+                    response = f"Join room OK {room_name}"
+                    notifyNewMember(room_name, f"{id}님이 방에 참여하셨습니다.")
                 else:
-                    response = f"Chat room {room_name} does not exist."
+                    response = f"{room_name}이 존재하지 않습니다."
                 client_socket.send(response.encode())
-            elif command[0] == 'leave_room':
-                room_name, user_id = command[1], command[2]
-                if room_name in chat_rooms and user_id in chat_rooms[room_name]:
-                    chat_rooms[room_name].remove(user_id)
-                    response = f"Left room {room_name}"
-                    notify_room_members(room_name, f"{user_id} has left the room.")
+            elif info[0] == '방 떠남':
+                room_name, id = info[1], info[2]
+                if room_name in chat_rooms and id in chat_rooms[room_name]:
+                    chat_rooms[room_name].remove(id)
+                    response = f"Left OK {room_name}"
+                    notifyNewMember(room_name, f"{id}님이 방을 떠났습니다..")
                 else:
                     response = f"Not in room {room_name}"
                 client_socket.send(response.encode())
-            elif command[0] == 'send_message':
-                room_name, user_id, msg = command[1], command[2], command[3]
+            elif info[0] == 'send_message':
+                room_name, id, msg = info[1], info[2], info[3]
                 if room_name in chat_rooms:
                     for user in chat_rooms[room_name]:
                         if user in clients:
                             ip, port = clients[user]
                             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                                 sock.connect((ip, port))
-                                sock.send(f"{user_id}@{room_name}: {msg}".encode())
+                                sock.send(f"{id}@{room_name}: {msg}".encode())
         except:
             break
     client_socket.close()
@@ -86,7 +86,7 @@ def main():
     while True:
         client_socket, client_address = server_socket.accept()
         print(f"Connection from {client_address}")
-        threading.Thread(target=handle_client, args=(client_socket, client_address)).start()
+        threading.Thread(target=handleClient, args=(client_socket, client_address)).start()
 
 if __name__ == "__main__":
     main()
