@@ -1,7 +1,8 @@
 import socket
 import threading
 import json
-import sys
+
+
 
 
 def receive_messages(sock):
@@ -28,14 +29,13 @@ def show_options():
     print("1. 개인채팅")
     print("2. 단톡방 생성")
     print("3. 단톡방 참가")
-    print("4. 단톡방 나가기")
-    print("5. 나가기\n")
+    print("4. 나가기\n")
     option = input()
     return option
 
 def main():
     global users
-    user_id = input("아이디 입력 하시오: ")
+    id = input("아이디 입력 하시오: ")
 
     # 소켓 생성 및 바인딩
     listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,59 +50,61 @@ def main():
     server_port = 5000
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     conn.connect((server_ip, server_port))
-    conn.send(f'login,{user_id},{ip},{port}'.encode())
-    print(f"{user_id}님이 로그인 하셨습니다")
+    conn.send(f'로그인,{id},{ip},{port}'.encode())
+    print(f"{id}님이 로그인 하셨습니다")
     conn.close()
 
     # 메시지 송수신 스레드 시작
-    threading.Thread(target=receive_messages, args=(listen_socket,)).start()
+    threading.Thread(target=receive_messages, args=(listen_socket,), daemon=True).start()
 
-    in_chat_room = False
-    in_private_chat = False
-    current_chat_room = None
-    current_private_user = None
+
+    checkChatRoom = False
+    checkPrivateChat = False
+    currChatRoom = None
+    curr1vs1User = None
 
     while True:
-        if in_chat_room:
+        if checkChatRoom:
             message = input()
             if message == "/leave":
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
-                conn.send(f'leave_room,{current_chat_room},{user_id}'.encode())
+                conn.send(f'방 떠남,{currChatRoom},{id}'.encode())
                 response = conn.recv(1024).decode()
-                if "Left room" in response:
-                    in_chat_room = False
-                    current_chat_room = None
-                print(response)
+                if "Left OK" in response:
+                    checkChatRoom = False
+                    currChatRoom = None
+                print(f"{id}님이 방에서 나갔습니다.")
                 conn.close()
                 continue
+
             else:
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
-                conn.send(f'send_message,{current_chat_room},{user_id},{message}'.encode())
+                conn.send(f'send_message,{currChatRoom},{id},{message}'.encode())
                 conn.close()
                 continue
-        elif in_private_chat:
+        elif checkPrivateChat:
             message = input()
             if message == "/leave":
-                in_private_chat = False
-                current_private_user = None
+                checkPrivateChat = False
+                curr1vs1User = None
                 print("개인 채팅에서 나갑니다")
                 continue
             else:
-                target_ip, target_port = users[current_private_user]
+                oppo_ip, oppo_port = users[curr1vs1User]
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as msg_socket:
-                    msg_socket.connect((target_ip, target_port))
-                    msg_socket.send(f'{user_id}@private: {message}'.encode())
+                    msg_socket.connect((oppo_ip, oppo_port))
+                    msg_socket.send(f'{id}@개인채팅: {message}'.encode())
                 continue
         else:
             option = show_options()
 
             if option == '1':
-                target_user = input("Enter the user ID to message: ")
+                target_user = input("개인 채팅을 원하는 상대의 ID를 입력하시오: ")
                 if target_user in users:
-                    current_private_user = target_user
-                    in_private_chat = True
+                    curr1vs1User = target_user
+                    checkPrivateChat = True
                     print(f"{target_user}님과의 개인채팅을 시작합니다")
                     continue
                 else:
@@ -112,46 +114,32 @@ def main():
                 room_name = input("생성할 방의 제목을 입력하시오: ")
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
-                conn.send(f'create_room,{room_name}'.encode())
+                conn.send(f'방 생성,{room_name}'.encode())
                 response = conn.recv(1024).decode()
                 print(response)
                 conn.close()
                 continue
 
             elif option == '3':
-                room_name = input("Enter chat room name to join: ")
+                room_name = input("참여할 방의 제목을 입력하세요: ")
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
-                conn.send(f'join_room,{room_name},{user_id}'.encode())
+                conn.send(f'방 참가,{room_name},{id}'.encode())
                 response = conn.recv(1024).decode()
-                if "Joined room" in response:
-                    in_chat_room = True
-                    current_chat_room = room_name
-                print(f"{room_name}에 입장합니다.")
+                if "Join room OK" in response:
+                    checkChatRoom = True
+                    currChatRoom = room_name
+                    print(f"{room_name}에 입장합니다.")
+                else:
+                    print(response)git 
                 conn.close()
                 continue
 
             elif option == '4':
-                if in_chat_room:
-                    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    conn.connect((server_ip, server_port))
-                    conn.send(f'leave_room,{current_chat_room},{user_id}'.encode())
-                    response = conn.recv(1024).decode()
-                    if "Left room" in response:
-                        in_chat_room = False
-                        current_chat_room = None
-                    print(f"{current_chat_room}을 떠납니다")
-                    conn.close()
-                    continue
-                elif in_private_chat:
-                    in_private_chat = False
-                    current_private_user = None
-                    print()
-                    continue
+                print("메신저 프로그램을 종료합니다.")
+                exit(0)
 
-            elif option == '5':
-                print("Exiting...")
-                sys.exit()
+
 
 if __name__ == "__main__":
     users = {}
