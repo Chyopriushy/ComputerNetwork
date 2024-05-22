@@ -36,6 +36,14 @@ def handleClient(client_socket, client_address):
                 id, ip, port = info[1], info[2], info[3]
                 clients[id] = (ip, int(port))
                 sendList()
+            elif info[0] == '방 정보 요청':
+                if chat_rooms == {} :
+                    response = f"생성된 방이 없습니다.\n"
+                else :
+                    response = f""
+                    for key, value in chat_rooms.items():
+                        response += f"방 이름 : {key}, 참여중인사람 : {value} \n"
+                client_socket.send(response.encode())
             elif info[0] == '방 생성':
                 room_name, id = info[1], info[2]
                 if room_name not in chat_rooms:
