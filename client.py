@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 
-#test
+
 
 
 def receive_messages(sock):
@@ -126,9 +126,18 @@ def main():
                 continue
 
             elif option == '3':
-                room_name = input("참여할 방의 제목을 입력하세요: ")
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
+                conn.send(f'방 정보 요청'.encode())
+                response = conn.recv(1024).decode()
+                if "생성된 방이 없습니다." in response :
+                    print(response)
+                    conn.close()
+                    continue
+                print(response)
+                
+                room_name = input("참여할 방의 제목을 입력하세요: ")
+
                 conn.send(f'방 참가,{room_name},{id}'.encode())
                 response = conn.recv(1024).decode()
                 if "Join room OK" in response:
