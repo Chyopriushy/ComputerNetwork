@@ -24,7 +24,7 @@ def receive_messages(sock):
         except:
             break
 
-def show_options():
+def getOptions():
     print("\n원하시는 항목을 선택하십시오: ")
     print("1. 개인채팅")
     print("2. 단톡방 생성")
@@ -37,7 +37,7 @@ def main():
     global users
     id = input("아이디 입력 하시오: ")
 
-    # 소켓 생성 및 바인딩
+
     listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listen_socket.bind(('0.0.0.0', 0))
     listen_socket.listen(5)
@@ -45,7 +45,7 @@ def main():
     print(f"IP: {ip}")
     print(f"Port Number: {port}")
 
-    # 로그인 서버에 연결
+
     server_ip = '127.0.0.1'
     server_port = 5000
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,7 +54,7 @@ def main():
     print(f"{id}님이 로그인 하셨습니다")
     conn.close()
 
-    # 메시지 송수신 스레드 시작
+
     threading.Thread(target=receive_messages, args=(listen_socket,), daemon=True).start()
 
 
@@ -98,7 +98,7 @@ def main():
                     msg_socket.send(f'{id}@개인채팅: {message}'.encode())
                 continue
         else:
-            option = show_options()
+            option = getOptions()
 
             if option == '1':
                 target_user = input("개인 채팅을 원하는 상대의 ID를 입력하시오: ")
@@ -114,9 +114,14 @@ def main():
                 room_name = input("생성할 방의 제목을 입력하시오: ")
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.connect((server_ip, server_port))
-                conn.send(f'방 생성,{room_name}'.encode())
+                conn.send(f'방 생성,{room_name},{id}'.encode())
                 response = conn.recv(1024).decode()
-                print(response)
+                if "Create OK" in response:
+                    checkChatRoom = True
+                    currChatRoom = room_name
+                    print(f"{room_name}에 입장합니다")
+                else:
+                    print(response)
                 conn.close()
                 continue
 
@@ -131,7 +136,7 @@ def main():
                     currChatRoom = room_name
                     print(f"{room_name}에 입장합니다.")
                 else:
-                    print(response)git 
+                    print(response)
                 conn.close()
                 continue
 
